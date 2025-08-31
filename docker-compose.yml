@@ -1,0 +1,30 @@
+version: "3.9"
+services:
+  app:
+    build: .
+    image: booking-backend:prod
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Copenhagen
+      # Tillad kun din offentlige frontend (ændr til dit domæne!)
+      - ALLOW_ORIGIN=https://book.example.com
+    volumes:
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 5
+    # (valgfrit til lokal test)
+    # ports:
+    #   - "8080:8080"
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    depends_on:
+      - app
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    command: tunnel --no-autoupdate run
+    # Ingen volumes nødvendige – token håndteres af Cloudflare
